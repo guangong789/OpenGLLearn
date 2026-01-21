@@ -35,16 +35,18 @@ int main() {
     Material boxMat;
     boxMat.diffuse  = LoadTextureFromFile("docs/IMAGE/container.png");
     boxMat.specular = LoadTextureFromFile("docs/IMAGE/container_specular.png");
-    boxMat.shininess = 32.0f;
     //----------------------------------------------------------------------
-    PointLight pointlight;
+    Light pointlight;
     pointlight.position = {2.2f, 1.0f, 2.0f};
+    pointlight.type = 1;
     pointlight.upload(objectShader);
+    //----------------------------------------------------------------------
+    Light directionlight;
+    // directionlight.upload(objectShader);
     //----------------------------------------------------------------------
     objectShader.use();
     objectShader.set("material.shininess", boxMat.shininess);
     objectShader.set("hasSpecularMap", true);
-    objectShader.set("useDirectionLight", false);
     //----------------------------------------------------------------------
     Renderable box;
     box.mesh = cubeMesh;

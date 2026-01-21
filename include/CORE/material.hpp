@@ -5,7 +5,7 @@
 struct Material {
     unsigned int diffuse = 0;
     unsigned int specular = 0;
-    float shininess = 32.0f;
+    float shininess = 64.0f;
 
     void bind(Shader& shader) const;
 };
