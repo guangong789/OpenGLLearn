@@ -1,0 +1,27 @@
+# VS / Windows
+.vs/
+*.user
+*.suo
+*.log
+
+# VSCode
+.vscode/
+
+# Build
+build/
+out/
+bin/
+obj/
+cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+
+# Executables
+*.exe
+*.dll
+*.pdb
+
+# OpenGL / assets cache
+*.tmp
