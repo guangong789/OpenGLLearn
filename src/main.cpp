@@ -37,13 +37,14 @@ int main() {
     boxMat.specular = LoadTextureFromFile("docs/IMAGE/container_specular.png");
     boxMat.shininess = 32.0f;
     //----------------------------------------------------------------------
-    Light light;
-    light.position = {2.2f, 1.0f, 2.0f};
-    light.upload(objectShader);
+    PointLight pointlight;
+    pointlight.position = {2.2f, 1.0f, 2.0f};
+    pointlight.upload(objectShader);
     //----------------------------------------------------------------------
     objectShader.use();
     objectShader.set("material.shininess", boxMat.shininess);
     objectShader.set("hasSpecularMap", true);
+    objectShader.set("useDirectionLight", false);
     //----------------------------------------------------------------------
     Renderable box;
     box.mesh = cubeMesh;
@@ -54,7 +55,7 @@ int main() {
     Renderable lightVisual;
     lightVisual.mesh = cubeMesh;
     lightVisual.material = nullptr;
-    lightVisual.transform.position = light.position;
+    lightVisual.transform.position = pointlight.position;
     lightVisual.transform.scale = glm::vec3(0.2f);
     //----------------------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {

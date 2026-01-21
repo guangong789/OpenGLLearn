@@ -62,10 +62,12 @@ Shader::~Shader() {
 }
 
 GLint Shader::getUniformLocation(const std::string& name) {
-    if (uniformCache.contains(name)) {
-        return uniformCache[name];
-    }
+    if (uniformCache.count(name)) return uniformCache[name];
+
     GLint loc = glGetUniformLocation(ID, name.c_str());
+#ifndef NDEBUG
+    if (loc == -1) std::cerr << "[WARN] uniform not found: " << name << std::endl;
+#endif
     uniformCache[name] = loc;
     return loc;
 }

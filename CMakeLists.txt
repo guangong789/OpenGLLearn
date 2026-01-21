@@ -44,8 +44,8 @@ add_executable(main
     src/uti.cpp
     src/read_obj.cpp
     src/camera.cpp
-    src/cube.cpp
-    src/light.cpp
+    src/CUBE/cube.cpp
+    src/CUBE/light.cpp
     src/global.cpp
     src/stb_image.cpp
     src/CORE/mesh.cpp
