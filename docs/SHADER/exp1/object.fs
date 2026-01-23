@@ -19,12 +19,17 @@ struct Light {
     vec3 diffuse;
     vec3 specular;
 
+    float cutoff;
+    float outercutoff;
     float constant;
     float linear;
     float quadratic;
 
     int type; // 0 = directional, 1 = point, 2 = spot
 };
+
+uniform float ambientStrength;
+uniform float diffuseStrength;
 
 uniform Material material;
 uniform Light light;
@@ -36,15 +41,22 @@ void main()
     vec3 albedo = texture(material.diffuse, TexCoord).rgb;
     vec3 norm   = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
-    // 光照方向
+    // Type
     vec3 lightDir;
-    if (light.type == 0) lightDir = normalize(-light.direction);
-    else lightDir = normalize(light.position - FragPos);
+    if (light.type == 0) lightDir = normalize(-light.direction);  // directional
+    else lightDir = normalize(light.position - FragPos);  // point + spot
+    float spotFactor = 1.0;
+    if (light.type == 2) {
+        vec3 spotDir = normalize(-light.direction);
+        float theta = dot(lightDir, spotDir);
+        float epsilon = light.cutoff - light.outercutoff;
+        spotFactor = clamp((theta - light.outercutoff) / epsilon, 0.0, 1.0);
+    }
     // Ambient
-    vec3 ambient = light.ambient * albedo * 0.3;
+    vec3 ambient = light.ambient * albedo * ambientStrength;
     // Diffuse
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * albedo * 0.8;
+    vec3 diffuse = light.diffuse * diff * albedo * diffuseStrength;
     // Specular
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess);
@@ -61,6 +73,6 @@ void main()
         );
     }
 
-    vec3 result = (ambient + diffuse + specular) * attenuation;
+    vec3 result = (ambient + diffuse + specular) * attenuation * spotFactor;
     FragColor = vec4(result, 1.0);
 }

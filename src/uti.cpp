@@ -71,11 +71,11 @@ void processInput(GLFWwindow *window) {
         glfwSetWindowShouldClose(window, true);
     }
     
-    float velocity = ourCamera.MovementSpeed * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) ourCamera.ProcessKeyboard(Camera_Movement::FORWARD, velocity);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) ourCamera.ProcessKeyboard(Camera_Movement::BACKWARD, velocity);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) ourCamera.ProcessKeyboard(Camera_Movement::LEFT, velocity);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) ourCamera.ProcessKeyboard(Camera_Movement::RIGHT, velocity);
+    float velocity = myCamera.MovementSpeed * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) myCamera.ProcessKeyboard(Camera_Movement::FORWARD, velocity);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) myCamera.ProcessKeyboard(Camera_Movement::BACKWARD, velocity);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) myCamera.ProcessKeyboard(Camera_Movement::LEFT, velocity);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) myCamera.ProcessKeyboard(Camera_Movement::RIGHT, velocity);
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -94,11 +94,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 
     lastX = xpos;
     lastY = ypos;
-    ourCamera.ProcessMouseMovement(xoffset, yoffset);
+    myCamera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    ourCamera.ProcessMouseScroll(static_cast<float>(yoffset));
+    myCamera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
 unsigned int LoadTextureFromFile(const char* path) {

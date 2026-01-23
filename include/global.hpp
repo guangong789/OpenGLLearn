@@ -11,7 +11,7 @@ extern float deltaTime;
 extern float lastTime;
 
 // Camera
-extern Camera ourCamera;
+extern Camera myCamera;
 
 // Hardware
 inline constexpr int scrWidth = 1000;

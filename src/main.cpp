@@ -38,15 +38,23 @@ int main() {
     //----------------------------------------------------------------------
     Light pointlight;
     pointlight.position = {2.2f, 1.0f, 2.0f};
-    pointlight.type = 1;
-    pointlight.upload(objectShader);
+    pointlight.type = LightType::Point;
+    // pointlight.upload(objectShader);
     //----------------------------------------------------------------------
     Light directionlight;
     // directionlight.upload(objectShader);
     //----------------------------------------------------------------------
+    Light spotlight;
+    spotlight.position = myCamera.Position;
+    spotlight.direction = myCamera.Front;
+    spotlight.type = LightType::Spot;
+    spotlight.upload(objectShader);
+    //----------------------------------------------------------------------
     objectShader.use();
     objectShader.set("material.shininess", boxMat.shininess);
     objectShader.set("hasSpecularMap", true);
+    objectShader.set("ambientStrength", 0.3f);
+    objectShader.set("diffuseStrength", 0.8f);
     //----------------------------------------------------------------------
     Renderable box;
     box.mesh = cubeMesh;
@@ -56,7 +64,6 @@ int main() {
     //----------------------------------------------------------------------
     Renderable lightVisual;
     lightVisual.mesh = cubeMesh;
-    lightVisual.material = nullptr;
     lightVisual.transform.position = pointlight.position;
     lightVisual.transform.scale = glm::vec3(0.2f);
     //----------------------------------------------------------------------
@@ -69,19 +76,22 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        glm::mat4 view = ourCamera.GetViewMatrix();
+        spotlight.followCamera(myCamera);
+        spotlight.upload(objectShader);
+
+        glm::mat4 view = myCamera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(
-            glm::radians(ourCamera.Zoom),
+            glm::radians(myCamera.Zoom),
             (float)scrWidth / (float)scrHeight,
             0.1f, 500.f
         );
-        // ===== draw object =====
+
         objectShader.use();
         objectShader.set("view", view);
         objectShader.set("projection", projection);
-        objectShader.set("viewPos", ourCamera.Position);
+        objectShader.set("viewPos", myCamera.Position);
         box.draw(objectShader);
-        // ===== draw light =====
+
         lightingShader.use();
         lightingShader.set("view", view);
         lightingShader.set("projection", projection);
