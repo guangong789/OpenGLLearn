@@ -51,6 +51,7 @@ add_executable(main
     src/CORE/mesh.cpp
     src/CORE/material.cpp
     src/CORE/renderable.cpp
+    src/MANAGER/LightManager.cpp
 )
 
 if (WIN32 AND MINGW)

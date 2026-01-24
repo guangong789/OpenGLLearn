@@ -1,32 +1,49 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <GRAPHICS/shader.hpp>
-#include "global.hpp"
+#include <CAMERA/camera.hpp>
 
-enum class LightType : int {
-    Directional = 0,
-    Point = 1,
-    Spot = 2
+struct LightBase {
+    glm::vec3 ambient{0.1f};
+    glm::vec3 diffuse{1.0f};
+    glm::vec3 specular{1.0f};
+
+    virtual ~LightBase() = default;
 };
 
-constexpr int toInt(LightType t);
+struct DirLight : public LightBase {
+    glm::vec3 direction{-0.2f, -1.0f, -0.3f};
 
-struct Light {
-    glm::vec3 position {0.0f};
-    glm::vec3 direction {0.0f, -1.0f, 0.0f};
+    DirLight() = default;
+    explicit DirLight(const glm::vec3& dir) : direction(dir) {}
 
-    glm::vec3 ambient  {0.1f};
-    glm::vec3 diffuse  {1.0f};
-    glm::vec3 specular {1.0f};
+    void upload(Shader& shader) const;
+};
 
-    float cutoff{glm::cos(glm::radians(12.5f))};
-    float outercutoff{glm::cos(glm::radians(17.5f))};
+struct PointLight : public LightBase {
+    glm::vec3 position{0.0f};
+
     float constant{1.0f};
     float linear{0.09f};
     float quadratic{0.032f};
 
-    LightType type{LightType::Directional};
+    PointLight() = default;
+    explicit PointLight(const glm::vec3& pos) : position(pos) {}
 
-    void upload(Shader& shader) const;
+    void upload(Shader& shader, int index) const;
+};
+
+struct SpotLight : public LightBase {
+    glm::vec3 position{0.0f};
+    glm::vec3 direction{0.0f, -1.0f, 0.0f};
+
+    float cutoff{glm::cos(glm::radians(12.5f))};
+    float outercutoff{glm::cos(glm::radians(17.5f))};
+
+    float constant{1.0f};
+    float linear{0.09f};
+    float quadratic{0.032f};
+
     void followCamera(const Camera& cam);
+    void upload(Shader& shader) const;
 };

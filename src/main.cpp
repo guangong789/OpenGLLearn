@@ -15,6 +15,7 @@
 #include <CUBE/light.hpp>
 #include <CORE/material.hpp>
 #include <CORE/renderable.hpp>
+#include <MANAGER/LightManager.hpp>
 
 // extern "C" {
 // __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -33,22 +34,17 @@ int main() {
     Shader lightingShader("docs/SHADER/exp1/light.vs", "docs/SHADER/exp1/light.fs");
     Mesh* cubeMesh = Cube::CreateCubeMesh();
     Material boxMat;
-    boxMat.diffuse  = LoadTextureFromFile("docs/IMAGE/container.png");
+    boxMat.diffuse = LoadTextureFromFile("docs/IMAGE/container.png");
     boxMat.specular = LoadTextureFromFile("docs/IMAGE/container_specular.png");
     //----------------------------------------------------------------------
-    Light pointlight;
-    pointlight.position = {2.2f, 1.0f, 2.0f};
-    pointlight.type = LightType::Point;
-    // pointlight.upload(objectShader);
-    //----------------------------------------------------------------------
-    Light directionlight;
-    // directionlight.upload(objectShader);
-    //----------------------------------------------------------------------
-    Light spotlight;
-    spotlight.position = myCamera.Position;
-    spotlight.direction = myCamera.Front;
-    spotlight.type = LightType::Spot;
-    spotlight.upload(objectShader);
+    LightManager lightmanager;
+    std::vector<glm::vec3> pointlightPos{
+        {2.0f, 1.0f, 2.0f},
+        {-2.0f, 1.0f, -2.0f}
+    };
+    for (auto& pos : pointlightPos) lightmanager.pointlights.emplace_back(pos);
+    lightmanager.spotlight.position = myCamera.Position;
+    lightmanager.spotlight.direction = myCamera.Front;
     //----------------------------------------------------------------------
     objectShader.use();
     objectShader.set("material.shininess", boxMat.shininess);
@@ -64,7 +60,6 @@ int main() {
     //----------------------------------------------------------------------
     Renderable lightVisual;
     lightVisual.mesh = cubeMesh;
-    lightVisual.transform.position = pointlight.position;
     lightVisual.transform.scale = glm::vec3(0.2f);
     //----------------------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {
@@ -76,8 +71,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        spotlight.followCamera(myCamera);
-        spotlight.upload(objectShader);
+        lightmanager.spotlight.followCamera(myCamera);
 
         glm::mat4 view = myCamera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(
@@ -87,6 +81,7 @@ int main() {
         );
 
         objectShader.use();
+        lightmanager.upload(objectShader);
         objectShader.set("view", view);
         objectShader.set("projection", projection);
         objectShader.set("viewPos", myCamera.Position);
@@ -95,10 +90,13 @@ int main() {
         lightingShader.use();
         lightingShader.set("view", view);
         lightingShader.set("projection", projection);
-        lightingShader.set("model", lightVisual.transform.matrix());
-        cubeMesh->draw();
+        for (const auto& pl : lightmanager.pointlights) {
+            lightVisual.transform.position = pl.position;
+            lightingShader.set("model", lightVisual.transform.matrix());
+            cubeMesh->draw();
+        }
 
-        CHECK_GL(void(0));
+        // CHECK_GL(void(0));
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
