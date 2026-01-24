@@ -29,7 +29,6 @@ private:
 #endif
 };
 
-
 template<typename T>
 void Shader::set(const std::string&, const T&) {
     static_assert(sizeof(T) == 0, "Unsupported uniform type");
