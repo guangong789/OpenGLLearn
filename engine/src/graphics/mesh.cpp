@@ -20,9 +20,11 @@ void Mesh::draw() const {
 
 void Mesh::setup(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
     indexCount = indices.size();
+    // Generate
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
+    // Binding & Copy
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);

@@ -14,7 +14,7 @@ target_sources(engine
         src/render/material.cpp
         src/render/shader.cpp
 
-        src/resource/read_obj.cpp
+        src/resource/model.cpp
 
         src/scene/Lighting/light.cpp
         src/scene/Lighting/LightManager.cpp
@@ -30,7 +30,7 @@ target_include_directories(engine
 
 target_link_libraries(engine
     PUBLIC
-        glm
+        glm::glm
         glad
     PRIVATE
         glfw
