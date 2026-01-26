@@ -2,14 +2,46 @@
 #include <graphics/mesh.hpp>
 
 Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
-    indexCount = indices.size();
     setup(vertices, indices);
+    indexCount = static_cast<unsigned int>(indices.size());
 }
 
 Mesh::~Mesh() {
     if (VAO) glDeleteVertexArrays(1, &VAO);
     if (VBO) glDeleteBuffers(1, &VBO);
     if (EBO) glDeleteBuffers(1, &EBO);
+}
+// 移动构造
+Mesh::Mesh(Mesh&& other) noexcept {
+    VAO = other.VAO;
+    VBO = other.VBO;
+    EBO = other.EBO;
+    indexCount = other.indexCount;
+
+    other.VAO = 0;
+    other.VBO = 0;
+    other.EBO = 0;
+    other.indexCount = 0;
+}
+// 移动赋值
+Mesh& Mesh::operator=(Mesh&& other) noexcept {
+    if (this == &other) return *this;
+
+    if (VAO) glDeleteVertexArrays(1, &VAO);
+    if (VBO) glDeleteBuffers(1, &VBO);
+    if (EBO) glDeleteBuffers(1, &EBO);
+
+    VAO = other.VAO;
+    VBO = other.VBO;
+    EBO = other.EBO;
+    indexCount = other.indexCount;
+
+    other.VAO = 0;
+    other.VBO = 0;
+    other.EBO = 0;
+    other.indexCount = 0;
+
+    return *this;
 }
 
 void Mesh::draw() const {

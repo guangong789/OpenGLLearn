@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <graphics/mesh.hpp>
 #include <render/material.hpp>
+#include <resource/model.hpp>
 
 struct Transform {
     glm::vec3 position{0.0f};
@@ -12,10 +13,8 @@ struct Transform {
     glm::mat4 matrix() const;
 };
 
-class Renderable {
-public:
-    Mesh* mesh = nullptr;
-    Material* material = nullptr;
+struct Renderable {
+    Model* model;
     Transform transform;
 
     void draw(Shader& shader) const;

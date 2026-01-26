@@ -10,9 +10,6 @@ glm::mat4 Transform::matrix() const {
 }
 
 void Renderable::draw(Shader& shader) const {
-    if (!mesh) return;
-    shader.use();
     shader.set("model", transform.matrix());
-    if (material) material->bind(shader);
-    mesh->draw();
+    model->draw(shader);
 }

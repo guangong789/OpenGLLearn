@@ -16,6 +16,7 @@
 #include <render/material.hpp>
 #include <scene/renderable.hpp>
 #include <scene/Lighting/LightManager.hpp>
+#include <resource/model.hpp>
 
 // extern "C" {
 // __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -30,12 +31,9 @@ int main() {
     //----------------------------------------------------------------------
     glEnable(GL_DEPTH_TEST);
     //----------------------------------------------------------------------
-    Shader objectShader("assets/shaders/exp1/object.vs", "assets/shaders/exp1/object.fs");
-    Shader lightingShader("assets/shaders/exp1/light.vs", "assets/shaders/exp1/light.fs");
-    Mesh* cubeMesh = Cube::CreateCubeMesh();
-    Material boxMat;
-    boxMat.diffuse = LoadTextureFromFile("assets/textures/container.png");
-    boxMat.specular = LoadTextureFromFile("assets/textures/container_specular.png");
+    Shader objectShader("assets/shaders/exp/object.vs", "assets/shaders/exp/object.fs");
+    Shader lightingShader("assets/shaders/exp/light.vs", "assets/shaders/exp/light.fs");
+    Model backpack("assets/backpack/backpack.obj");
     //----------------------------------------------------------------------
     LightManager lightmanager;
     std::vector<glm::vec3> pointlightPos{
@@ -46,21 +44,11 @@ int main() {
     lightmanager.spotlight.position = myCamera.Position;
     lightmanager.spotlight.direction = myCamera.Front;
     //----------------------------------------------------------------------
-    objectShader.use();
-    objectShader.set("material.shininess", boxMat.shininess);
-    objectShader.set("hasSpecularMap", true);
-    objectShader.set("ambientStrength", 0.3f);
-    objectShader.set("diffuseStrength", 0.8f);
+    Renderable obj;
+    obj.model = &backpack;
+    obj.transform.scale = glm::vec3(1.0f);
     //----------------------------------------------------------------------
-    Renderable box;
-    box.mesh = cubeMesh;
-    box.material = &boxMat;
-    box.transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-    box.transform.scale = glm::vec3(1.0f);
-    //----------------------------------------------------------------------
-    Renderable lightVisual;
-    lightVisual.mesh = cubeMesh;
-    lightVisual.transform.scale = glm::vec3(0.2f);
+    Mesh* cubeMesh = Cube::CreateCubeMesh();
     //----------------------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -79,20 +67,23 @@ int main() {
             (float)scrWidth / (float)scrHeight,
             0.1f, 500.f
         );
-
+        // object
         objectShader.use();
         lightmanager.upload(objectShader);
+        objectShader.set("model", glm::mat4(1.0f));
         objectShader.set("view", view);
         objectShader.set("projection", projection);
         objectShader.set("viewPos", myCamera.Position);
-        box.draw(objectShader);
-
+        obj.draw(objectShader);
+        // light
         lightingShader.use();
         lightingShader.set("view", view);
         lightingShader.set("projection", projection);
         for (const auto& pl : lightmanager.pointlights) {
-            lightVisual.transform.position = pl.position;
-            lightingShader.set("model", lightVisual.transform.matrix());
+            glm::mat4 lightModel(1.0f);
+            lightModel = glm::translate(lightModel, pl.position);
+            lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+            lightingShader.set("model", lightModel);
             cubeMesh->draw();
         }
 
