@@ -12,6 +12,7 @@
 #include <render/shader.hpp>
 #include <core/camera.hpp>
 #include <cube.hpp>
+#include <plane.hpp>
 #include <scene/Lighting/light.hpp>
 #include <render/material.hpp>
 #include <scene/renderable.hpp>
@@ -38,17 +39,29 @@ int main() {
     LightManager lightmanager;
     std::vector<glm::vec3> pointlightPos{
         {2.0f, 1.0f, 2.0f},
-        {-2.0f, 1.0f, -2.0f}
+        {-2.0f, 1.0f, 2.0f}
     };
     for (auto& pos : pointlightPos) lightmanager.pointlights.emplace_back(pos);
     lightmanager.spotlight.position = myCamera.Position;
     lightmanager.spotlight.direction = myCamera.Front;
     //----------------------------------------------------------------------
+    Mesh& cubeMesh = Cube::GetCubeMesh();
+    //----------------------------------------------------------------------
+    auto floordata = Plane::GetXZ();
+    std::shared_ptr<Mesh> floorMesh = std::make_shared<Mesh>(floordata.vertices, floordata.indices);
+    Material floorMat;
+    floorMat.diffuse = Texture2D::FromFile("assets/exp/floor.jpg");
+    floorMat.shininess = 16.0f;
+    Model floorModel(floorMesh, std::move(floorMat));
+    //----------------------------------------------------------------------
     Renderable obj;
     obj.model = &backpack;
     obj.transform.scale = glm::vec3(1.0f);
-    //----------------------------------------------------------------------
-    Mesh* cubeMesh = Cube::CreateCubeMesh();
+
+    Renderable floor;
+    floor.model = &floorModel;
+    floor.transform.position = {0.0f, -2.0f, 0.0f};
+    floor.transform.scale = {20.0f, 1.0f, 20.0f};
     //----------------------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -70,11 +83,11 @@ int main() {
         // object
         objectShader.use();
         lightmanager.upload(objectShader);
-        objectShader.set("model", glm::mat4(1.0f));
         objectShader.set("view", view);
         objectShader.set("projection", projection);
         objectShader.set("viewPos", myCamera.Position);
         obj.draw(objectShader);
+        floor.draw(objectShader);
         // light
         lightingShader.use();
         lightingShader.set("view", view);
@@ -84,7 +97,7 @@ int main() {
             lightModel = glm::translate(lightModel, pl.position);
             lightModel = glm::scale(lightModel, glm::vec3(0.2f));
             lightingShader.set("model", lightModel);
-            cubeMesh->draw();
+            cubeMesh.draw();
         }
 
         // CHECK_GL(void(0));

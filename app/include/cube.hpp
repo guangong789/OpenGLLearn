@@ -4,5 +4,5 @@
 #include <graphics/mesh.hpp>
 
 namespace Cube {
-    Mesh* CreateCubeMesh();
+    Mesh& GetCubeMesh();
 }

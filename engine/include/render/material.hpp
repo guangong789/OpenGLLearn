@@ -1,14 +1,18 @@
 #pragma once
-#include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <memory>
 #include <render/shader.hpp>
+#include <resource/texture.hpp>
 
 struct Material {
-    unsigned int diffuse = 0;
-    unsigned int specular = 0;
-    float shininess = 64.0f;
-    float ambientStrength = 0.3f;
-    float diffuseStrength = 0.8f;
+    std::shared_ptr<const Texture2D> diffuse;
+    std::shared_ptr<const Texture2D> specular;
 
-    static unsigned int defaultSpecular();
+    float shininess{64.0f};
+    float diffuseStrength{0.8f};
+
+    Material();
+    Material(std::shared_ptr<const Texture2D> diff, std::shared_ptr<const Texture2D> spec);
+
     void bind(Shader& shader) const;
 };

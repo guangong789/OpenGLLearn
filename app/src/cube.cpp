@@ -42,9 +42,7 @@ static const std::vector<unsigned int> indices = {
     20, 21, 22, 22, 23, 20    // bottom
 };
 
-static Mesh* cubeMesh = nullptr;
-
-Mesh* Cube::CreateCubeMesh() {
-    if (!cubeMesh) cubeMesh = new Mesh(vertices, indices);
-    return cubeMesh;
+Mesh& Cube::GetCubeMesh() {
+    static Mesh mesh{vertices, indices};
+    return mesh;
 }

@@ -11,20 +11,17 @@ struct Material {
     sampler2D diffuse;
     sampler2D specular;
     float shininess;
-    float ambientStrength;
     float diffuseStrength;
 };
 
 struct DirLight {
     vec3 direction;
-    vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 };
 
 struct PointLight {
     vec3 position;
-    vec3 ambient;
     vec3 diffuse;
     vec3 specular;
     float constant;
@@ -37,7 +34,6 @@ struct SpotLight {
     vec3 direction;
     float cutoff;
     float outercutoff;
-    vec3 ambient;
     vec3 diffuse;
     vec3 specular;
     float constant;
@@ -65,19 +61,17 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 albedo, vec3 s
     vec3 lightDir = normalize(-light.direction);
 
     float diff, spec;
-    vec3 ambient = light.ambient * albedo * material.ambientStrength;
     CalcBlinnPhong(lightDir, normal, viewDir, material.shininess, diff, spec);
     vec3 diffuse = light.diffuse * diff * albedo * material.diffuseStrength;
     vec3 specular = light.specular * spec * specColor;
 
-    return ambient + diffuse + specular;
+    return diffuse + specular;
 }
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 albedo, vec3 specColor) {
     vec3 lightDir = normalize(light.position - fragPos);
 
     float diff, spec;
-    vec3 ambient = light.ambient * albedo * material.ambientStrength;
     CalcBlinnPhong(lightDir, normal, viewDir, material.shininess, diff, spec);
     vec3 diffuse = light.diffuse * diff * albedo * material.diffuseStrength;
     vec3 specular = light.specular * spec * specColor;
@@ -87,28 +81,32 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, v
     float dist  = sqrt(dist2);
     float attenuation = 1.0 / (light.constant + light.linear * dist + light.quadratic * dist2);
 
-    return (ambient + diffuse + specular) * attenuation;
+    return (diffuse + specular) * attenuation;
 }
 
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 albedo, vec3 specColor) {
-    vec3 lightDir = normalize(light.position - fragPos);
+    float epsilon = max(light.cutoff - light.outercutoff, 0.0001);
+    if (epsilon <= 0.0) return vec3(0.0);
 
+    vec3 lightDir = normalize(light.position - fragPos);
     float theta = dot(lightDir, normalize(-light.direction));
-    float epsilon = light.cutoff - light.outercutoff;
     float intensity = clamp((theta - light.outercutoff) / epsilon, 0.0, 1.0);
 
     float diff, spec;
-    vec3 ambient = light.ambient * albedo * material.ambientStrength;
     CalcBlinnPhong(lightDir, normal, viewDir, material.shininess, diff, spec);
+
     vec3 diffuse = light.diffuse * diff * albedo * material.diffuseStrength;
     vec3 specular = light.specular * spec * specColor;
 
     vec3 delta = light.position - fragPos;
     float dist2 = dot(delta, delta);
-    float dist  = sqrt(dist2);
-    float attenuation = 1.0 / (light.constant + light.linear * dist + light.quadratic * dist2);
+    float dist = sqrt(dist2);
+    float attenuation = 1.0 / max(
+        light.constant + light.linear * dist + light.quadratic * dist2,
+        0.0001
+    );
 
-    return (ambient + diffuse + specular) * attenuation * intensity;
+    return (diffuse + specular) * attenuation * intensity;
 }
 
 // --------------------------------------------------
@@ -116,13 +114,14 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec
 void main() {
     vec3 normal = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
+
     vec3 albedo = texture(material.diffuse, TexCoord).rgb;
     vec3 specColor = texture(material.specular, TexCoord).rgb;
 
     vec3 result = vec3(0.0);
-
     result += CalcDirLight(dirlight, normal, viewDir, albedo, specColor);
-    for (int i = 0; i < numPointLights; ++i) result += CalcPointLight(pointlights[i], normal, FragPos, viewDir, albedo, specColor);
+    for (int i = 0; i < numPointLights; ++i)
+        result += CalcPointLight(pointlights[i], normal, FragPos, viewDir, albedo, specColor);
     result += CalcSpotLight(spotlight, normal, FragPos, viewDir, albedo, specColor);
 
     FragColor = vec4(result, 1.0);

@@ -8,11 +8,31 @@ Model::Model(const std::string& path) : myPath(path){
     loadModel(path);
 }
 
+Model::Model(std::shared_ptr<const Mesh> mesh, Material&& material) {
+    meshes.emplace_back(std::move(mesh), std::move(material));
+}
+
 void Model::draw(Shader& shader) const {
     for (const auto& sub : meshes) {
         sub.material.bind(shader);
-        sub.mesh.draw();
+        sub.mesh->draw();
     }
+}
+
+std::shared_ptr<const Texture2D> Model::LoadMaterialTexture(aiMaterial* mat, aiTextureType type, const std::string& directory) {
+    if (mat->GetTextureCount(type) == 0) return nullptr;
+
+    aiString str;
+    mat->GetTexture(type, 0, &str);
+
+    std::string fullPath = directory + "/" + str.C_Str();
+
+    auto it = textureCache.find(fullPath);
+    if (it != textureCache.end()) return it->second;
+
+    auto tex = Texture2D::FromFile(fullPath);
+    textureCache.emplace(fullPath, tex);
+    return tex;
 }
 
 void Model::loadModel(const std::string& path) {
@@ -32,30 +52,6 @@ void Model::loadModel(const std::string& path) {
     processNode(scene->mRootNode, scene);
 }
 
-Texture Model::LoadMaterialTexture(aiMaterial* mat, aiTextureType type, const std::string& typeName, const std::string& directory) {
-    Texture texture{};
-    texture.id = 0;
-    texture.type = typeName;
-    texture.path = "";
-
-    if (mat->GetTextureCount(type) == 0) return texture;
-
-    aiString str;
-    mat->GetTexture(type, 0, &str);
-
-    for (const auto& tex : textures_loaded) {
-        if (std::strcmp(tex.path.C_Str(), str.C_Str()) == 0) return tex;
-    }
-
-    std::string filename = directory + "/" + str.C_Str();
-    texture.id = LoadTextureFromFile(filename.c_str());
-    texture.path = str;
-    textures_loaded.emplace_back(texture);
-
-    return texture;
-}
-
-
 void Model::processNode(aiNode* node, const aiScene* scene) {
     // node->mMeshes[i] 是索引，mesh在scene->mMeshes
     for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
@@ -68,29 +64,28 @@ void Model::processNode(aiNode* node, const aiScene* scene) {
     }
 }
 
-Model::SubMesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
+Model::SubMesh Model::processMesh(aiMesh* aimesh, const aiScene* aiscene) {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
     // vertex
-    for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+    for (unsigned int i = 0; i < aimesh->mNumVertices; ++i) {
         Vertex v{};
         // position
-        v.Position = {mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z};
+        v.Position = {aimesh->mVertices[i].x, aimesh->mVertices[i].y, aimesh->mVertices[i].z};
         // normal
-        if (mesh->HasNormals()) {
-            v.Normal = {mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
+        if (aimesh->HasNormals()) {
+            v.Normal = {aimesh->mNormals[i].x, aimesh->mNormals[i].y, aimesh->mNormals[i].z};
         }
         // texture
-        if (mesh->mTextureCoords[0]) {
-            v.Texcoord = {mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
+        if (aimesh->mTextureCoords[0]) {
+            v.Texcoord = {aimesh->mTextureCoords[0][i].x, aimesh->mTextureCoords[0][i].y};
         }
-
         vertices.emplace_back(v);
     }
     // index
-    for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
-        const aiFace& face = mesh->mFaces[i];
+    for (unsigned int i = 0; i < aimesh->mNumFaces; ++i) {
+        const aiFace& face = aimesh->mFaces[i];
         for (unsigned int j = 0; j < face.mNumIndices; ++j) {
             indices.emplace_back(face.mIndices[j]);
         }
@@ -98,21 +93,18 @@ Model::SubMesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     // material
     Material material;
 
-    if (scene->mMaterials && mesh->mMaterialIndex < scene->mNumMaterials) {
-        aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
+    if (aiscene->mMaterials && aimesh->mMaterialIndex < aiscene->mNumMaterials) {
+        aiMaterial* mat = aiscene->mMaterials[aimesh->mMaterialIndex];
 
-        Texture diff = LoadMaterialTexture(mat, aiTextureType_DIFFUSE, "texture_diffuse", directory);
-        Texture spec = LoadMaterialTexture(mat, aiTextureType_SPECULAR, "texture_specular", directory);
-        material.diffuse = diff.id;
-        material.specular = spec.id;
+        auto diff = LoadMaterialTexture(mat, aiTextureType_DIFFUSE, directory);
+        auto spec = LoadMaterialTexture(mat, aiTextureType_SPECULAR, directory);
+
+        material.diffuse  = diff ? diff : Texture2D::DefaultDiffusePtr();
+        material.specular = spec ? spec : Texture2D::DefaultSpecularPtr();
 
         mat->Get(AI_MATKEY_SHININESS, material.shininess);
     }
 
-    return SubMesh{Mesh(vertices, indices),material};
-}
-
-void Model::reload() {
-    meshes.clear();
-    loadModel(myPath);
+    auto mesh = std::make_shared<Mesh>(vertices, indices);
+    return SubMesh{mesh, std::move(material)};
 }

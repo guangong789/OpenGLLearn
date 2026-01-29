@@ -64,6 +64,16 @@ inline void Shader::set<float>(const std::string& name, const float& v) {
     if (loc != -1) glUniform1f(loc, v);
 }
 
+// vec2
+template<>
+inline void Shader::set<glm::vec2>(const std::string& name, const glm::vec2& v) {
+#ifndef NDEBUG
+    assert(current == this && "Shader::set called but this shader is NOT bound");
+#endif
+    GLint loc = getUniformLocation(name);
+    if (loc != -1) glUniform3fv(loc, 1, glm::value_ptr(v));
+}
+
 // vec3
 template<>
 inline void Shader::set<glm::vec3>(const std::string& name, const glm::vec3& v) {

@@ -4,6 +4,7 @@ target_sources(main
     PRIVATE
         src/main.cpp
         src/cube.cpp
+        src/plane.cpp
 )
 
 target_include_directories(main

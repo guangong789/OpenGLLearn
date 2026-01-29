@@ -4,7 +4,6 @@
 #include <core/camera.hpp>
 
 struct LightBase {
-    glm::vec3 ambient{0.1f};
     glm::vec3 diffuse{1.0f};
     glm::vec3 specular{1.0f};
 

@@ -13,8 +13,9 @@ target_sources(engine
 
         src/render/material.cpp
         src/render/shader.cpp
-
+        
         src/resource/model.cpp
+        src/resource/texture.cpp
 
         src/scene/Lighting/light.cpp
         src/scene/Lighting/LightManager.cpp
