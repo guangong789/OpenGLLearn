@@ -16,6 +16,8 @@ struct Transform {
 struct Renderable {
     Model* model;
     Transform transform;
+    bool enableOutline{false};
 
-    void draw(Shader& shader) const;
+    void drawGeometry(Shader& shader) const;
+    void drawOutline(Shader& shader, float scaled = 1.05f) const;
 };  

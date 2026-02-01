@@ -6,18 +6,20 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <core/camera.hpp>
 #include <core/Utils/stb_image.h>
 #include <core/Utils/uti.hpp>
 #include <core/Config/global.hpp>
 #include <render/shader.hpp>
-#include <core/camera.hpp>
-#include <cube.hpp>
-#include <plane.hpp>
-#include <scene/Lighting/light.hpp>
 #include <render/material.hpp>
+#include <render/GeometryPass.hpp>
+#include <render/OutlinePass.hpp>
+#include <scene/Lighting/light.hpp>
 #include <scene/renderable.hpp>
 #include <scene/Lighting/LightManager.hpp>
 #include <resource/model.hpp>
+#include <cube.hpp>
+#include <plane.hpp>
 
 // extern "C" {
 // __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -31,9 +33,13 @@ int main() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     //----------------------------------------------------------------------
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     //----------------------------------------------------------------------
-    Shader objectShader("assets/shaders/exp/object.vs", "assets/shaders/exp/object.fs");
-    Shader lightingShader("assets/shaders/exp/light.vs", "assets/shaders/exp/light.fs");
+    Shader objectShader("assets/shaders/object.vs", "assets/shaders/object.fs");
+    Shader lightingShader("assets/shaders/light.vs", "assets/shaders/light.fs");
+    Shader SingleColorShader("assets/shaders/object.vs", "assets/shaders/SingleColor.fs");
     Model backpack("assets/backpack/backpack.obj");
     //----------------------------------------------------------------------
     LightManager lightmanager;
@@ -45,19 +51,18 @@ int main() {
     lightmanager.spotlight.position = myCamera.Position;
     lightmanager.spotlight.direction = myCamera.Front;
     //----------------------------------------------------------------------
-    Mesh& cubeMesh = Cube::GetCubeMesh();
+    GeometryPass geometryPass{objectShader, lightmanager};
+    OutlinePass outlinePass{SingleColorShader, 1.05f};
     //----------------------------------------------------------------------
     auto floordata = Plane::GetXZ();
     std::shared_ptr<Mesh> floorMesh = std::make_shared<Mesh>(floordata.vertices, floordata.indices);
     Material floorMat;
     floorMat.diffuse = Texture2D::FromFile("assets/exp/floor.jpg");
-    floorMat.shininess = 16.0f;
     Model floorModel(floorMesh, std::move(floorMat));
     //----------------------------------------------------------------------
     Renderable obj;
     obj.model = &backpack;
-    obj.transform.scale = glm::vec3(1.0f);
-
+    obj.enableOutline = true;
     Renderable floor;
     floor.model = &floorModel;
     floor.transform.position = {0.0f, -2.0f, 0.0f};
@@ -68,8 +73,9 @@ int main() {
         float currentTime = static_cast<float>(glfwGetTime());
         deltaTime = currentTime - lastTime;
         lastTime = currentTime;
-        glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         lightmanager.spotlight.followCamera(myCamera);
@@ -80,25 +86,15 @@ int main() {
             (float)scrWidth / (float)scrHeight,
             0.1f, 500.f
         );
-        // object
-        objectShader.use();
-        lightmanager.upload(objectShader);
-        objectShader.set("view", view);
-        objectShader.set("projection", projection);
-        objectShader.set("viewPos", myCamera.Position);
-        obj.draw(objectShader);
-        floor.draw(objectShader);
-        // light
-        lightingShader.use();
-        lightingShader.set("view", view);
-        lightingShader.set("projection", projection);
-        for (const auto& pl : lightmanager.pointlights) {
-            glm::mat4 lightModel(1.0f);
-            lightModel = glm::translate(lightModel, pl.position);
-            lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-            lightingShader.set("model", lightModel);
-            cubeMesh.draw();
-        }
+
+        RenderContext rct{view, projection, myCamera.Position};
+
+        geometryPass.submit(&obj);
+        geometryPass.submit(&floor);
+        outlinePass.submit(&obj);
+        outlinePass.submit(&floor);
+        geometryPass.render(rct);
+        outlinePass.render(rct);
 
         // CHECK_GL(void(0));
         glfwSwapBuffers(window);

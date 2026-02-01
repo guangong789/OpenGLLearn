@@ -9,7 +9,14 @@ glm::mat4 Transform::matrix() const {
     return m;
 }
 
-void Renderable::draw(Shader& shader) const {
+void Renderable::drawGeometry(Shader& shader) const {
     shader.set("model", transform.matrix());
-    model->draw(shader);
+    model->drawGeometry(shader);
+}
+
+void Renderable::drawOutline(Shader& shader, float scaled) const {
+    glm::mat4 m = transform.matrix();
+    m = glm::scale(m, glm::vec3(scaled));
+    shader.set("model", m);
+    model->drawMeshOnly();
 }

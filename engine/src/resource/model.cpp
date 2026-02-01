@@ -12,11 +12,15 @@ Model::Model(std::shared_ptr<const Mesh> mesh, Material&& material) {
     meshes.emplace_back(std::move(mesh), std::move(material));
 }
 
-void Model::draw(Shader& shader) const {
+void Model::drawGeometry(Shader& shader) const {
     for (const auto& sub : meshes) {
         sub.material.bind(shader);
         sub.mesh->draw();
     }
+}
+
+void Model::drawMeshOnly() const {
+    for (const auto& sub : meshes) sub.mesh->draw();
 }
 
 std::shared_ptr<const Texture2D> Model::LoadMaterialTexture(aiMaterial* mat, aiTextureType type, const std::string& directory) {

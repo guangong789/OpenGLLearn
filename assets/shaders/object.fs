@@ -120,8 +120,9 @@ void main() {
 
     vec3 result = vec3(0.0);
     result += CalcDirLight(dirlight, normal, viewDir, albedo, specColor);
-    for (int i = 0; i < numPointLights; ++i)
+    for (int i = 0; i < numPointLights; ++i) {
         result += CalcPointLight(pointlights[i], normal, FragPos, viewDir, albedo, specColor);
+    }
     result += CalcSpotLight(spotlight, normal, FragPos, viewDir, albedo, specColor);
 
     FragColor = vec4(result, 1.0);

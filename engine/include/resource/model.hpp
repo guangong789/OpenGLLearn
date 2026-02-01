@@ -15,7 +15,9 @@ public:
     explicit Model(const std::string& path);
     Model(std::shared_ptr<const Mesh> mesh, Material&& material);
     
-    void draw(Shader& shader) const;
+    void drawGeometry(Shader& shader) const;
+    void drawMeshOnly() const;
+
 private:
     std::string myPath;
     std::string directory;
