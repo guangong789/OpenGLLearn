@@ -10,5 +10,4 @@ struct RenderContext {
 class RenderPass {
 public:
     virtual ~RenderPass() = default;
-    virtual void render(const RenderContext& rct) = 0;
 };

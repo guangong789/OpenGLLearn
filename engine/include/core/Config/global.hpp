@@ -4,7 +4,7 @@
 
 // Window
 struct GLFWwindow;
-extern GLFWwindow* window;
+extern GLFWwindow* screen;
 
 // Time
 extern float deltaTime;

@@ -20,4 +20,4 @@ float lastY = scrHeight * 0.5f;
 bool firstMouse = true;
 
 // Window
-GLFWwindow* window = nullptr;
+GLFWwindow* screen = nullptr;

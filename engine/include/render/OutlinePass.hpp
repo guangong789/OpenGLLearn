@@ -8,7 +8,7 @@ public:
     OutlinePass(Shader& shader, float scaled = 1.05f);
 
     void submit(Renderable* obj);
-    void render(const RenderContext& rct) override;
+    void render(const RenderContext& rct);
 
 private:
     Shader& shader;

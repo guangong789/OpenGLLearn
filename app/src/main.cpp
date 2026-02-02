@@ -26,11 +26,11 @@
 // }
 
 int main() {
-    window = InitWindow(scrWidth, scrHeight, "Main");
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    screen = InitWindow(scrWidth, scrHeight, "Main");
+    glfwSetFramebufferSizeCallback(screen, framebuffer_size_callback);
+    glfwSetCursorPosCallback(screen, mouse_callback);
+    glfwSetScrollCallback(screen, scroll_callback);
+    glfwSetInputMode(screen, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     //----------------------------------------------------------------------
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -40,7 +40,6 @@ int main() {
     Shader objectShader("assets/shaders/object.vs", "assets/shaders/object.fs");
     Shader lightingShader("assets/shaders/light.vs", "assets/shaders/light.fs");
     Shader SingleColorShader("assets/shaders/object.vs", "assets/shaders/SingleColor.fs");
-    Model backpack("assets/backpack/backpack.obj");
     //----------------------------------------------------------------------
     LightManager lightmanager;
     std::vector<glm::vec3> pointlightPos{
@@ -54,27 +53,43 @@ int main() {
     GeometryPass geometryPass{objectShader, lightmanager};
     OutlinePass outlinePass{SingleColorShader, 1.05f};
     //----------------------------------------------------------------------
+    Model backpack("assets/backpack/backpack.obj");
+
     auto floordata = Plane::GetXZ();
     std::shared_ptr<Mesh> floorMesh = std::make_shared<Mesh>(floordata.vertices, floordata.indices);
     Material floorMat;
     floorMat.diffuse = Texture2D::FromFile("assets/exp/floor.jpg");
-    Model floorModel(floorMesh, std::move(floorMat));
+    Model floorModel{floorMesh, std::move(floorMat)};
+
+    auto windowdata = Plane::GetYZ();
+    std::shared_ptr<Mesh> windowMesh = std::make_shared<Mesh>(windowdata.vertices, windowdata.indices);
+    Material windowMat;
+    windowMat.diffuse = Texture2D::FromFile("assets/exp/window.png");
+    Model windowModel{windowMesh, std::move(windowMat)};
     //----------------------------------------------------------------------
     Renderable obj;
     obj.model = &backpack;
     obj.enableOutline = true;
+
     Renderable floor;
     floor.model = &floorModel;
     floor.transform.position = {0.0f, -2.0f, 0.0f};
     floor.transform.scale = {20.0f, 1.0f, 20.0f};
+
+    Renderable window;
+    window.model = &windowModel;
+    window.transform.position = {3.0f, 0.0f, 0.0f};
+    window.transform.scale = {1.0f, 2.0f, 2.0f};
+    window.transparent = true;
     //----------------------------------------------------------------------
-    while (!glfwWindowShouldClose(window)) {
-        processInput(window);
+    while (!glfwWindowShouldClose(screen)) {
+        processInput(screen);
         float currentTime = static_cast<float>(glfwGetTime());
         deltaTime = currentTime - lastTime;
         lastTime = currentTime;
         glClearColor(0.0f, 0.0f, 0.0f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearStencil(0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -91,13 +106,14 @@ int main() {
 
         geometryPass.submit(&obj);
         geometryPass.submit(&floor);
+        geometryPass.submit(&window);
         outlinePass.submit(&obj);
-        outlinePass.submit(&floor);
-        geometryPass.render(rct);
+        geometryPass.renderOpaque(rct);
         outlinePass.render(rct);
+        geometryPass.renderTransparent(rct);
 
         // CHECK_GL(void(0));
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(screen);
         glfwPollEvents();
     }
 

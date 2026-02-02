@@ -9,10 +9,12 @@ public:
     GeometryPass(Shader& shader, LightManager& lights);
 
     void submit(Renderable* obj);
-    void render(const RenderContext& rct) override;
+    void renderOpaque(const RenderContext& rct);
+    void renderTransparent(const RenderContext& rct);
 
 private:
     Shader& shader;
     LightManager& lights;
-    std::vector<Renderable*> objects;
+    std::vector<Renderable*> opaqueObjects;
+    std::vector<Renderable*> transparentObjects;
 };

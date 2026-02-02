@@ -17,6 +17,7 @@ struct Renderable {
     Model* model;
     Transform transform;
     bool enableOutline{false};
+    bool transparent{false};
 
     void drawGeometry(Shader& shader) const;
     void drawOutline(Shader& shader, float scaled = 1.05f) const;
