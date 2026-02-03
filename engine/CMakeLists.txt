@@ -13,9 +13,12 @@ target_sources(engine
 
         src/render/material.cpp
         src/render/shader.cpp
-        src/render/GeometryPass.cpp
-        src/render/OutlinePass.cpp
-        
+        src/render/pass/RenderPass.cpp
+        src/render/pass/GeometryPass.cpp
+        src/render/pass/OutlinePass.cpp
+        src/render/pass/FinalPass.cpp
+        src/render/renderer.cpp
+
         src/resource/model.cpp
         src/resource/texture.cpp
 

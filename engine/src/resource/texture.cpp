@@ -15,6 +15,10 @@ Texture2D& Texture2D::operator=(Texture2D&& other) noexcept {
     return *this;
 }
 
+Texture2D::~Texture2D() {
+    if (id) glDeleteTextures(1, &id);
+}
+
 std::shared_ptr<Texture2D> Texture2D::FromFile(const std::string& path) {
     GLuint tex;
     glGenTextures(1, &tex);
@@ -42,13 +46,65 @@ std::shared_ptr<Texture2D> Texture2D::FromFile(const std::string& path) {
     return std::make_shared<Texture2D>(tex);
 }
 
-Texture2D::~Texture2D() {
-    if (id) glDeleteTextures(1, &id);
+std::shared_ptr<Texture2D> Texture2D::CreateColor(int width, int height) {
+    GLuint tex = 0;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    auto ptr = std::make_shared<Texture2D>();
+    ptr->id = tex;
+    ptr->usage = Usage::Color;
+    return ptr;
+}
+
+std::shared_ptr<Texture2D> Texture2D::CreateDepth(int width, int height) {
+    GLuint tex = 0;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    auto ptr = std::make_shared<Texture2D>();
+    ptr->id = tex;
+    ptr->usage = Usage::Depth;
+    return ptr;
 }
 
 void Texture2D::bind(GLuint unit) const {
     glActiveTexture(GL_TEXTURE0 + unit);
     glBindTexture(GL_TEXTURE_2D, id);
+}
+
+bool Texture2D::valid() const {
+    return id != 0;
+}
+
+void Texture2D::attachFBO() const {
+    switch (usage) {
+    case Usage::Color:
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, id, 0);
+        break;
+
+    case Usage::Depth:
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, id, 0);
+        break;
+
+    case Usage::DepthStencil:
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, id, 0);
+        break;
+    }
 }
 
 static GLuint createSolidTexture(unsigned char r, unsigned char g, unsigned char b) {
@@ -64,18 +120,14 @@ static GLuint createSolidTexture(unsigned char r, unsigned char g, unsigned char
     return tex;
 }
 
-bool Texture2D::valid() const {
-    return id != 0;
-}
-
 std::shared_ptr<const Texture2D> Texture2D::DefaultDiffusePtr() {
-    static std::shared_ptr<Texture2D> tex =
-        std::make_shared<Texture2D>(createSolidTexture(255, 255, 255));
+    static std::shared_ptr<Texture2D> tex = std::make_shared<Texture2D>(createSolidTexture(255, 255, 255));
+    tex->setUsage(Usage::Color);
     return tex;
 }
 
 std::shared_ptr<const Texture2D> Texture2D::DefaultSpecularPtr() {
-    static std::shared_ptr<Texture2D> tex =
-        std::make_shared<Texture2D>(createSolidTexture(128, 128, 128));
+    static std::shared_ptr<Texture2D> tex = std::make_shared<Texture2D>(createSolidTexture(128, 128, 128));
+    tex->setUsage(Usage::Color);
     return tex;
 }
