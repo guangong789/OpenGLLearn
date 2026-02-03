@@ -35,8 +35,8 @@ int main() {
     glfwSetInputMode(screen, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     // ------------------ Shaders ------------------
     Shader objectShader("assets/shaders/object.vs", "assets/shaders/object.fs");
-    Shader SingleColorShader("assets/shaders/object.vs", "assets/shaders/SingleColor.fs");
-    Shader fullscreenShader("assets/shaders/fullscreen.vs", "assets/shaders/fullscreen.fs");
+    Shader outlineShader("assets/shaders/FullScreen.vs", "assets/shaders/OutlinePost.fs");
+    Shader fullscreenShader("assets/shaders/FullScreen.vs", "assets/shaders/FullScreen.fs");
     // ------------------ Lights ------------------
     LightManager lightmanager;
     std::vector<glm::vec3> pointlightPos{{2.0f, 1.0f, 2.0f}, {-2.0f, 1.0f, 2.0f}};
@@ -45,7 +45,7 @@ int main() {
     lightmanager.spotlight.direction = myCamera.Front;
     // ------------------ Pass ------------------
     auto geometryPass = std::make_unique<GeometryPass>(scrWidth, scrHeight, objectShader, lightmanager);
-    auto outlinePass = std::make_unique<OutlinePass>(SingleColorShader, 1.05f);
+    auto outlinePass = std::make_unique<OutlinePass>(scrWidth, scrHeight, outlineShader);
     auto finalPass = std::make_unique<FinalPass>(fullscreenShader);
     // ------------------ Renderer ------------------
     Renderer renderer(std::move(geometryPass), std::move(outlinePass), std::move(finalPass));
@@ -93,7 +93,7 @@ int main() {
             (float)scrWidth / (float)scrHeight,
             0.1f, 500.f
         );
-        RenderContext rct{view, projection, myCamera.Position};
+        RenderContext rct{view, projection, myCamera.Position, scrWidth, scrHeight};
 
         renderer.beginFrame();
         renderer.submit(&obj);

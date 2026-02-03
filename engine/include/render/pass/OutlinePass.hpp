@@ -1,21 +1,30 @@
 #pragma once
 #include <render/pass/RenderPass.hpp>
 #include <scene/renderable.hpp>
+#include <resource/texture.hpp>
 #include <vector>
 
 class OutlinePass : public RenderPass {
 public:
-    explicit OutlinePass(Shader& shader, float scale = 1.05f);
+    OutlinePass(int width, int height, Shader& shader);
 
     void submit(Renderable* obj);
     void execute(const RenderContext& rct) override;
-    void setScale(float s) { scaled = s; }
+    void setInputTextures(std::shared_ptr<Texture2D> color, std::shared_ptr<Texture2D> depth);
+    std::shared_ptr<Texture2D> getOutputTexture() const;
+    void resize(int width, int height);
 
 private:
-    Shader& shader;
-    float scaled;
-    std::vector<Renderable*> outlined;
-
+    void initFBO(int width, int height);
     void setupGLState();
     void restoreGLState();
+
+private:
+    GLuint fbo = 0;
+    std::shared_ptr<Texture2D> inputColor;
+    std::shared_ptr<Texture2D> inputDepth;
+    std::shared_ptr<Texture2D> outputColor;
+
+    Shader& shader;
+    std::vector<Renderable*> outlined;
 };

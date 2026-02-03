@@ -39,8 +39,9 @@ void Renderer::render(const RenderContext& rct) {
     }
 
     geometrypass->execute(rct);
+    outlinepass->setInputTextures(geometrypass->getColorTexture(), geometrypass->getDepthTexture());
     outlinepass->execute(rct);
 
-    finalpass->setInputTexture(geometrypass->getColorTexture());
+    finalpass->setInputTexture(outlinepass->getOutputTexture());
     finalpass->execute(rct);
 }

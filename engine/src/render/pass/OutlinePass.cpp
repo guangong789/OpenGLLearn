@@ -1,43 +1,83 @@
 #include <render/pass/OutlinePass.hpp>
+#include <glm/glm.hpp>
+#include <cassert>
 
-OutlinePass::OutlinePass(Shader& s, float sc) : shader(s), scaled(sc) {}
+OutlinePass::OutlinePass(int width, int height, Shader& s) : shader(s) {
+    initFBO(width, height);
+}
 
 void OutlinePass::submit(Renderable* obj) {
     if (!obj || !obj->model) return;
-    if (obj->enableOutline && !obj->transparent) 
+    if (obj->enableOutline && !obj->transparent)
         outlined.emplace_back(obj);
 }
 
 void OutlinePass::setupGLState() {
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
-    glEnable(GL_STENCIL_TEST);
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    glStencilMask(0x00);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glDisable(GL_CULL_FACE);
 }
 
 void OutlinePass::restoreGLState() {
-    glCullFace(GL_BACK);
-    glDisable(GL_CULL_FACE);
-    glStencilMask(0xFF);
-    glStencilFunc(GL_ALWAYS, 0, 0xFF);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 }
 
+void OutlinePass::initFBO(int width, int height) {
+    if (fbo == 0) glGenFramebuffers(1, &fbo);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    outputColor = Texture2D::CreateColor(width, height);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, outputColor->getId(), 0);
+
+    GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawBuffers);
+
+    auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    assert(status == GL_FRAMEBUFFER_COMPLETE && "OutlinePass FBO incomplete");
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void OutlinePass::resize(int width, int height) {
+    initFBO(width, height);
+}
+
+void OutlinePass::setInputTextures(std::shared_ptr<Texture2D> color, std::shared_ptr<Texture2D> depth) {
+    inputColor = std::move(color);
+    inputDepth = std::move(depth);
+}
+
+std::shared_ptr<Texture2D> OutlinePass::getOutputTexture() const {
+    return outputColor;
+}
+
 void OutlinePass::execute(const RenderContext& rct) {
-    if (outlined.empty()) return;
+    if (!inputColor || !inputDepth) return;
+    bool enableOutline = !outlined.empty();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glViewport(0, 0, rct.width, rct.height);
 
     setupGLState();
 
     shader.use();
-    shader.set("view", rct.view);
-    shader.set("projection", rct.projection);
+    inputColor->bind(0);
+    inputDepth->bind(1);
+    shader.set("uColor", 0);
+    shader.set("uDepth", 1);
+    shader.set("uTexelSize", glm::vec2(1.0f / rct.width, 1.0f / rct.height));
+    shader.set("uOutlineColor", glm::vec3(0.0f, 1.0f, 1.0f));
+    shader.set("uThreshold", 0.005f);
+    shader.set("uThickness", 2.0f);
+    shader.set("uNear", 0.1f);
+    shader.set("uFar", 500.0f);
+    shader.set("uEnableOutline", enableOutline ? 1 : 0);
 
-    for (auto* obj : outlined) obj->drawOutline(shader, scaled);
+    RenderPass::drawFullscreenQuad();
 
     restoreGLState();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     outlined.clear();
 }

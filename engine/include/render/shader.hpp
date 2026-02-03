@@ -71,7 +71,7 @@ inline void Shader::set<glm::vec2>(const std::string& name, const glm::vec2& v) 
     assert(current == this && "Shader::set called but this shader is NOT bound");
 #endif
     GLint loc = getUniformLocation(name);
-    if (loc != -1) glUniform3fv(loc, 1, glm::value_ptr(v));
+    if (loc != -1) glUniform2fv(loc, 1, glm::value_ptr(v));
 }
 
 // vec3
